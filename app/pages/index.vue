@@ -268,18 +268,20 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Right: player card -->
-      <SongCard
-        :track="{ id: current.id, title: current.title, author: current.author, img: current.img }"
-        :playing="playing"
-        :progress="progress"
-        :timeText="timeText"
-        :durationText="durationText"
-        @play="playPause(true)"
-        @pause="pause"
-        @seek="onSeek"
-        @next="nextSong"
-        @prev="prevSong"
-      />
+      <div class="song-card-wrap">
+        <SongCard
+          :track="{ id: current.id, title: current.title, author: current.author, img: current.img }"
+          :playing="playing"
+          :progress="progress"
+          :timeText="timeText"
+          :durationText="durationText"
+          @play="playPause(true)"
+          @pause="pause"
+          @seek="onSeek"
+          @next="nextSong"
+          @prev="prevSong"
+        />
+      </div>
 
       <audio
         ref="audio"
@@ -299,26 +301,28 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  padding: 0px 0px 0px 500px;
+  padding: 24px;                 /* ลบ padding-left:500px ที่ทำให้เอียง */
 }
 
-/* 2-column layout: list | card */
+/* 2 คอลัมน์: ซ้าย (list) ยืดได้ในช่วง 260–380px, ขวา (player) กว้างที่เหลือ */
 .player{
   display: grid;
-  grid-template-columns: 460px minmax(320px, 520px);
+  grid-template-columns: clamp(260px, 30vw, 380px) minmax(360px, 1fr);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;          /* ให้คอลัมน์สูงเท่ากันเมื่อเนื้อหาเอื้อ */
+  max-width: 1200px;
+  width: 100%;
 }
+.player > * { min-width: 0; }    /* กัน overflow ขององค์ประกอบภายใน grid */
 
-/* song list styles */
+/* ---- Song list card ---- */
 :root{
-  --grad-a: #0ea5e9; /* sky-500 */
-  --grad-b: #7c3aed; /* violet-600 */
+  --grad-a: #0ea5e9;
+  --grad-b: #7c3aed;
 }
 
+/* เอา width คงที่ออก ให้ grid เป็นคนกำหนดความกว้าง */
 .song-list-card{
-  width: 360px;
   border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(180deg, rgba(14,165,233,.10), rgba(124,58,237,.10));
@@ -326,10 +330,16 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 10px 30px rgba(2,6,23,.12);
+  display: flex;                 /* ทำเป็นคอลัมน์ */
+  flex-direction: column;
+  max-height: 60vh;              /* จำกัดความสูงรวมของการ์ด */
 }
 
-/* header with gradient bar + chips */
+/* header ติดบน (sticky) เวลาเลื่อน list */
 .list-header{
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -365,18 +375,22 @@ onBeforeUnmount(() => {
   background: rgba(255,255,255,.18);
 }
 
-/* body / rows */
+/* เนื้อหา list เลื่อนภายในการ์ด */
 .list-body{
-  max-height: 420px;
   overflow: auto;
   padding: 10px;
+  flex: 1; /* กินพื้นที่ที่เหลือในการ์ด */
 }
+
 .song-row + .song-row{ margin-top: 8px; }
 
+/* row layout: [thumb] [text] */
 .song-item{
+  display: grid;
+  grid-template-columns: 48px 1fr;   /* same thumb width for all rows */
+  column-gap: 12px;
+  align-items: center;
   width: 100%;
-  display: flex;
-  gap: 12px;
   padding: 10px;
   border-radius: 12px;
   border: 1px solid rgba(0,0,0,.08);
@@ -384,6 +398,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   text-align: left;
 }
+
 .song-item:hover{
   background: linear-gradient(135deg, rgba(14,165,233,.12), rgba(124,58,237,.12));
 }
@@ -393,7 +408,56 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 2px rgba(124,58,237,.25) inset;
 }
 
-.thumb{ width: 48px; height: 48px; object-fit: cover; border-radius: 8px; }
-.meta .title{ font-weight: 700; line-height: 1.2; }
-.meta .author{ opacity: .75; font-size: .9rem; }
+/* fixed-size thumbnail */
+.thumb{
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* text block: 2 fixed rows = title (can be 1–2 lines) + author (1 line) */
+.meta{
+  min-width: 0;                       /* allow ellipsis */
+  display: grid;
+  grid-template-rows: calc(1.25em * 2) 1.1em;  /* 2 title lines, then author */
+  align-content: left;
+}
+
+/* clamp title to 2 lines so author stays at the same Y */
+.meta .title{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+/* author always 1 line, same left edge and baseline */
+.meta .author{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: .75;
+  line-height: 1.1;
+}
+
+/* ---- Wrapper ด้านขวา ให้ยืดเต็มคอลัมน์และกัน overflow ---- */
+.song-card-wrap{
+  padding-left: 100px;
+  min-width: 0; /* สำคัญมากเวลามีข้อความยาว ๆ */
+}
+
+/* ---- Responsive: จอแคบ (< 900px) สลับเป็น 1 คอลัมน์ ---- */
+@media (max-width: 900px){
+  .player{
+    grid-template-columns: 1fr;
+  }
+  /* เรียงลิสต์ไว้บน แล้วตามด้วย Player */
+  .song-list-card{ order: 1; max-height: 60vh; }
+  .song-card-wrap{ order: 2; }
+}
+
 </style>
