@@ -4,7 +4,9 @@ type Track = { id: string; title: string; author: string; img?: string };
 const props = defineProps<{
   track: Track;
   playing: boolean;
-  progress: number; // 0..100
+  progress: number;
+  timeText?: string;
+  durationText?: string;
 }>();
 
 const emit = defineEmits<{
@@ -30,6 +32,12 @@ function onSeek(e: Event) {
     <div class="meta">
       <h3>{{ track.title }}</h3>
       <p>{{ track.author }}</p>
+    </div>
+
+    <!-- times -->
+    <div class="times">
+      <span>{{ timeText ?? "0:00" }}</span>
+      <span>{{ durationText ?? "--:--" }}</span>
     </div>
 
     <input
@@ -143,6 +151,13 @@ function onSeek(e: Event) {
 }
 .icon:hover {
   filter: brightness(1.15);
+}
+
+.times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  opacity: 0.85;
 }
 
 /* --- progress bar with NO visible thumb --- */
